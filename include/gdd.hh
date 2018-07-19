@@ -1,19 +1,22 @@
 #pragma once
 
-#include <boost/multiprecision/cpp_int.hpp>
-
 #include <vector>
+#include <queue>
 #include <list>
 #include <unordered_set>
 #include <unordered_map>
+#include <map>
 #include <functional>
 #include <cmath>
+
+//#include <boost/multiprecision/cpp_int.hpp>
+
 #include "permutation.hh"
 #include "util.hh"
 
 struct GroupDecisionDiagram {
-  // using BigInt = long long; 
-  using BigInt = boost::multiprecision::cpp_int;
+  using BigInt = long long; 
+  //using BigInt = boost::multiprecision::cpp_int;
 
   // it can represent permutations over {1, ..., nmax}
   static const int nmax = Permutation::nmax;
@@ -22,6 +25,10 @@ struct GroupDecisionDiagram {
 
   // g = tr[i][alpha] is a representative of G_{i-1}/G_i such that g(beta[i]) = alpha
   int n, r;
+
+  int orbit_index[rmax][nmax]; // orbit_index[i][alpha] = j
+  int orbit_length[rmax];      // 
+
   Permutation tr[rmax][nmax], trinv[rmax][nmax];
   int beta[rmax];
 
@@ -30,7 +37,6 @@ struct GroupDecisionDiagram {
   std::vector<Node> node;
 
   using HashTable = std::unordered_map<std::pair<int,int>,int>;
-
   HashTable getNodeCache[rmax][nmax]; 
   int getNode(char i, char alpha, int lo, int hi) {
     assert(alpha != beta[i]);
@@ -86,7 +92,7 @@ struct GroupDecisionDiagram {
       int alpha = g(beta[i]);
       return getNode(i, alpha, bot, leftMultiplication(trinv[i][alpha] * g, u, i+1));
     } else {
-      int child[n] = {0};
+      int child[nmax] = {0}; 
       do {
         int gamma = g(node[u].alpha);
         Permutation h = trinv[i][gamma] * g * tr[i][node[u].alpha];
@@ -182,32 +188,40 @@ struct GroupDecisionDiagram {
   // (1) non-redundant であれば，最適な base の log n approx を与える．
   // (2) 残ってる中で orbit of largest size をとれば log log n approx を与える．
   //
-  void SchreierSims(std::vector<Permutation> gen) {
-    for (int alpha; !gen.empty(); ) {
-      // compute the longest orbit
-      std::vector<int> stack, visited(n);
-      int max_length = 0;
-      for (int alpha_ = 0; alpha_ < n; ++alpha_) {
-        if (visited[alpha_]) continue;
-        stack.push_back(alpha_);
-        visited[alpha_] = true;
-        int length = 1;
-        while (!stack.empty()) {
-          int gamma = stack.back(); stack.pop_back();
-          for (Permutation g: gen) {
-            int delta = g(gamma);
-            if (!visited[delta]) {
-              stack.push_back(delta);
-              visited[delta] = true;
-              ++length;
-            }
+
+  // Compute the logest orbit of given generators
+  std::pair<int, int> longestOrbit(std::vector<Permutation> gen) {
+    std::vector<int> stack, visited(n);
+    int max_alpha = -1, max_length = 0;
+    for (int alpha = 0; alpha < n; ++alpha) {
+      if (visited[alpha]) continue;
+      stack.push_back(alpha);
+      visited[alpha] = true;
+      int length = 1;
+      while (!stack.empty()) {
+        int gamma = stack.back(); stack.pop_back();
+        for (Permutation g: gen) {
+          int delta = g(gamma);
+          if (!visited[delta]) {
+            stack.push_back(delta);
+            visited[delta] = true;
+            ++length;
           }
         }
-        if (length > max_length) {
-          max_length = length;
-          alpha = alpha_;
-        }
       }
+      if (length > max_length) {
+        max_alpha = alpha;
+        max_length = length;
+      }
+    }
+    return std::make_pair(max_alpha, max_length);
+  }
+
+  void SchreierSims(std::vector<Permutation> gen) {
+    while (1) {
+      int alpha; 
+      std::tie(alpha, orbit_length[r]) = longestOrbit(gen);
+      if (orbit_length[r] == 1) break;
 
       std::unordered_map<int, Permutation> trans;
       std::tie(trans, gen) = reduce(gen, alpha);
@@ -318,74 +332,6 @@ struct GroupDecisionDiagram {
     return g.identity();
   }
 
-
-
-
-  /*
-example
-digraph graph_name {
-  graph [
-    charset = "UTF-8";
-    label = "sample graph",
-    labelloc = "t",
-    labeljust = "c",
-    bgcolor = "#343434",
-    fontcolor = white,
-    fontsize = 18,
-    style = "filled",
-    rankdir = TB,
-    margin = 0.2,
-    splines = spline,
-    ranksep = 1.0,
-    nodesep = 0.9
-  ];
-
-  node [
-    colorscheme = "rdylgn11"
-    style = "solid,filled",
-    fontsize = 16,
-    fontcolor = 6,
-    fontname = "Migu 1M",
-    color = 7,
-    fillcolor = 11,
-    fixedsize = true,
-    height = 0.6,
-    width = 1.2
-  ];
-
-  edge [
-    style = solid,
-    fontsize = 14,
-    fontcolor = white,
-    fontname = "Migu 1M",
-    color = white,
-    labelfloat = true,
-    labeldistance = 2.5,
-    labelangle = 70
-  ];
-
-  // node define
-  alpha [shape = box];
-  beta [shape = box];
-  gamma [shape = Msquare];
-  delta [shape = box];
-  epsilon [shape = trapezium];
-  zeta [shape = Msquare];
-  eta;
-  theta [shape = doublecircle];
-
-  // edge define
-  alpha -> beta [label = "a-b", arrowhead = normal];
-  alpha -> gamma [label = "a-g"];
-  beta -> delta [label = "b-d"];
-  beta -> epsilon [label = "b-e", arrowhead = tee];
-  gamma -> zeta [label = "g-z"];
-  gamma -> eta [label = "g-e", style = dotted];
-  delta -> theta [arrowhead = crow];
-  zeta -> theta [arrowhead = crow];
-}
-
-*/
   std::string outputDot(int u) {
     std::stringstream ss;
     ss << "digraph graphname {\n";
