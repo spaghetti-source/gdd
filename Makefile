@@ -1,6 +1,16 @@
-CFLAGS = -O3 -Iinclude/
+# CFLAGS = -fsanitize=undefined -std=c++11 -O3 -Iinclude/
+CFLAGS = -std=c++11 -O2 -Iinclude/
 
-all: pancake lightsout
+all: pocketcube lightsout pancake permnet rubikscube
+
+clean:
+	rm lightsout pancake pocketcube
+
+pocketcube: example/pocketcube.cc
+	g++  $(CFLAGS) $< -o $@
+
+rubikscube: example/rubikscube.cc include/gdd.hh include/permutation.hh
+	g++  $(CFLAGS) $< -o $@
 
 pancake: example/pancake.cc
 	g++  $(CFLAGS) $< -o $@
@@ -8,4 +18,5 @@ pancake: example/pancake.cc
 lightsout: example/lightsout.cc 
 	g++  $(CFLAGS) $< -o $@
 
-
+permnet: example/permnet.cc 
+	g++  $(CFLAGS) $< -o $@

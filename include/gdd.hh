@@ -1,5 +1,25 @@
 #pragma once
 
+// Minato's left-multiplication
+//
+// 左から (i,j) をかけたとき，常に (i,j) の積で済む．
+// 
+// ... ほしい性質
+//
+// ????
+//
+//   g1 in T1, g2 in T1 
+//   ==> g1 g2 = g3 h where h in T2
+//
+// 確認
+//
+//   生成元の定義が甘い
+//
+// g (X + h Y)
+//
+//
+//
+
 #include <vector>
 #include <queue>
 #include <list>
@@ -9,26 +29,20 @@
 #include <functional>
 #include <cmath>
 
-//#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 
 #include "permutation.hh"
 #include "util.hh"
 
 struct GroupDecisionDiagram {
-  using BigInt = long long; 
-  //using BigInt = boost::multiprecision::cpp_int;
+  //using BigInt = long long; 
+  using BigInt = boost::multiprecision::cpp_int;
 
-  // it can represent permutations over {1, ..., nmax}
   static const int nmax = Permutation::nmax;
-  // upper bound of the maximum chain length
   static const int rmax = ceil(nmax * log(nmax) / log(2)); 
 
   // g = tr[i][alpha] is a representative of G_{i-1}/G_i such that g(beta[i]) = alpha
   int n, r;
-
-  int orbit_index[rmax][nmax]; // orbit_index[i][alpha] = j
-  int orbit_length[rmax];      // 
-
   Permutation tr[rmax][nmax], trinv[rmax][nmax];
   int beta[rmax];
 
@@ -78,39 +92,41 @@ struct GroupDecisionDiagram {
     return cupCache[uv];
   }
 
-  // it flattens the nodes in the same coset
-  std::map<std::pair<Permutation, int>, int> lMCache;
-  int leftMultiplication(Permutation g, int u, int i = 0) {
-    if (u == bot) return bot;
-    if (g.identity()) return u;
-    if (u == top) return singleton(g);
-    auto gu = std::make_pair(g, u);
-    if (lMCache.count(gu)) return lMCache[gu];
+  HashTable lMCache;
+  int leftMultiplication(Permutation g, int v, int i = 0) {
+    if (v == bot) return bot;
+    if (g.identity()) return v;
+    int u = singleton(g, i);
+    if (v == top) return u;
+    auto uv = std::make_pair(u, v);
+    if (lMCache.count(uv)) return lMCache[uv];
 
-    while (i < node[u].i && g(beta[i]) == beta[i]) ++i;
-    if (i < node[u].i) {
+    while (i < node[v].i && g(beta[i]) == beta[i]) ++i;
+    if (i < node[v].i) {
       int alpha = g(beta[i]);
-      return getNode(i, alpha, bot, leftMultiplication(trinv[i][alpha] * g, u, i+1));
+      return getNode(i, alpha, bot, leftMultiplication(trinv[i][alpha] * g, v, i+1));
     } else {
-      int child[nmax] = {0}; 
+      int child[n]; std::fill(child, child+n, 0);
       do {
-        int gamma = g(node[u].alpha);
-        Permutation h = trinv[i][gamma] * g * tr[i][node[u].alpha];
-        child[gamma] = leftMultiplication(h, node[u].hi, i+1);
-        u = node[u].lo;
-      } while (node[u].i == i);
+        int gamma = g(node[v].alpha);
+        Permutation h = trinv[i][gamma] * g * tr[i][node[v].alpha];
+        child[gamma] = leftMultiplication(h, node[v].hi, i+1);
+        v = node[v].lo;
+      } while (node[v].i == i);
       int gamma = g(beta[i]);
       Permutation h = trinv[i][gamma] * g;
-      child[gamma] = leftMultiplication(h, u, i+1);
+      child[gamma] = leftMultiplication(h, v, i+1);
 
-      u = child[beta[i]];
-      for (int alpha = n-1; alpha > beta[i]; --alpha) {
-        if (child[alpha]) 
-          u = getNode(i, alpha, u, child[alpha]);
-      }
-      return lMCache[gu] = u;
+      int v = child[beta[i]];
+      for (int alpha = n-1; alpha > beta[i]; --alpha) 
+        if (child[alpha]) v = getNode(i, alpha, v, child[alpha]);
+      return lMCache[uv] = v;
     }
   }
+  // 
+  // X = g Y
+  //
+  // Y の元は [1, ..., i] を fix する．g は i を動かす．
   HashTable cartesianProductCache;
   int cartesianProduct(int u, int v) {
     if (u == bot || v == bot) return bot;
@@ -219,9 +235,9 @@ struct GroupDecisionDiagram {
 
   void SchreierSims(std::vector<Permutation> gen) {
     while (1) {
-      int alpha; 
-      std::tie(alpha, orbit_length[r]) = longestOrbit(gen);
-      if (orbit_length[r] == 1) break;
+      int alpha, length; 
+      std::tie(alpha, length) = longestOrbit(gen);
+      if (length == 1) break;
 
       std::unordered_map<int, Permutation> trans;
       std::tie(trans, gen) = reduce(gen, alpha);
