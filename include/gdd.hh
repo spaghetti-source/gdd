@@ -1,25 +1,5 @@
 #pragma once
 
-// Minato's left-multiplication
-//
-// 左から (i,j) をかけたとき，常に (i,j) の積で済む．
-// 
-// ... ほしい性質
-//
-// ????
-//
-//   g1 in T1, g2 in T1 
-//   ==> g1 g2 = g3 h where h in T2
-//
-// 確認
-//
-//   生成元の定義が甘い
-//
-// g (X + h Y)
-//
-//
-//
-
 #include <vector>
 #include <queue>
 #include <list>
@@ -29,14 +9,14 @@
 #include <functional>
 #include <cmath>
 
-#include <boost/multiprecision/cpp_int.hpp>
+// #include <boost/multiprecision/cpp_int.hpp>
 
 #include "permutation.hh"
 #include "util.hh"
 
 struct GroupDecisionDiagram {
-  //using BigInt = long long; 
-  using BigInt = boost::multiprecision::cpp_int;
+  using BigInt = long long; 
+  //using BigInt = boost::multiprecision::cpp_int;
 
   static const int nmax = Permutation::nmax;
   static const int rmax = ceil(nmax * log(nmax) / log(2)); 
