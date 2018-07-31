@@ -11,8 +11,8 @@
 
 using namespace std;
 
-int main() {
-  int n; cin >> n;
+int main(int argc, char *argv[]) {
+  int n = atoi(argv[1]);
   vector<Permutation> gen;
   for (int k = 1; k < n; ++k) {
     Permutation g(n);
@@ -22,6 +22,7 @@ int main() {
   }
   
   GroupDecisionDiagram gdd(gen);
+  gdd.node.reserve(4000000);
   auto order = gdd.groupOrder();
   cout << "Group Order = " << order << endl;
 
