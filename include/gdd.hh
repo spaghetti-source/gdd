@@ -179,12 +179,22 @@ struct GroupDecisionDiagram {
     return size;
   }
 
-  // Schreier Sims with Jerrum Filter
-  //
-  // (1) non-redundant であれば，最適な base の log n approx を与える．
-  // (2) 残ってる中で orbit of largest size をとれば log log n approx を与える．
-  //
+  // Schreier-Sims with Jerrum filter
+  void SchreierSims(std::vector<Permutation> gen) {
+    while (1) {
+      int alpha, length; 
+      std::tie(alpha, length) = longestOrbit(gen);
+      if (length == 1) break;
 
+      std::unordered_map<int, Permutation> trans;
+      std::tie(trans, gen) = reduce(gen, alpha);
+      for (auto x: trans) {
+        tr[r][x.first] = x.second;
+        trinv[r][x.first] = x.second.inv();
+      }
+      beta[r++] = alpha;
+    }
+  }
   // Compute the logest orbit of given generators
   std::pair<int, int> longestOrbit(std::vector<Permutation> gen) {
     std::vector<int> stack, visited(n);
@@ -212,22 +222,6 @@ struct GroupDecisionDiagram {
     }
     return std::make_pair(max_alpha, max_length);
   }
-
-  void SchreierSims(std::vector<Permutation> gen) {
-    while (1) {
-      int alpha, length; 
-      std::tie(alpha, length) = longestOrbit(gen);
-      if (length == 1) break;
-
-      std::unordered_map<int, Permutation> trans;
-      std::tie(trans, gen) = reduce(gen, alpha);
-      for (auto x: trans) {
-        tr[r][x.first] = x.second;
-        trinv[r][x.first] = x.second.inv();
-      }
-      beta[r++] = alpha;
-    }
-  }
   // Compute orbit(alpha) and generators of stabilizer(alpha)
   std::pair<std::unordered_map<int, Permutation>, std::vector<Permutation>> reduce(std::vector<Permutation> gen, int alpha) {
 
@@ -236,12 +230,14 @@ struct GroupDecisionDiagram {
     std::queue<int> que;
     que.push(alpha);
     tr[alpha] = Permutation(n);
+    std::vector<int> order = {alpha};
     while (!que.empty()) {
       int a = que.front(); que.pop();
       for (Permutation g: gen) {
         int b = g(a);
         if (!tr.count(b)) {
           tr[b] = g * tr[a];
+          order.push_back(b);
           que.push(b);
         }
       }
@@ -305,9 +301,10 @@ struct GroupDecisionDiagram {
         eraseEdge(next[min_u]);
       }
     };
-    for (auto z: tr) {
-      int q = z.first;
-      Permutation &h = z.second;
+    // from far to near: keep generators close to the original ones
+    for (int i = order.size()-1; i >= 0; --i) {
+      int q = order[i];
+      Permutation &h = tr[q];
       for (Permutation g: gen) 
         insert(tr[g(q)].inv() * g * h);
     }
