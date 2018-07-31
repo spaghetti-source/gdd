@@ -9,9 +9,14 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char *argv[]) {
   int width, height; 
-  cin >> width >> height;
+  if (argc == 2) {
+    width = height = atoi(argv[1]);
+  } else {
+    width = atoi(argv[1]);
+    height = atoi(argv[2]);
+  }
   int turn = width*height;
   int n = 2*width*height;
   vector<Permutation> gen, elem;
@@ -37,9 +42,14 @@ int main() {
     z = gdd.cup(z, gdd.singleton(elem[i]));
   }
   int w = gdd.top;
+  GroupDecisionDiagram::BigInt prev = 0;
   cout << "cardinality | number of nodes | total nodes" << endl;
   for (int k = 0; k < 20; ++k) {
+    auto ww = w;
     w = gdd.cartesianProduct(z, w);
-    cout << gdd.cardinality(w) << " | " << gdd.numberOfNodes(w) << " | " << gdd.node.size() << endl;
+    if (w == ww) break;
+    GroupDecisionDiagram::BigInt curr = gdd.cardinality(w);
+    cout << curr - prev << " | " << gdd.numberOfNodes(w) << " | " << gdd.node.size() << endl;
+    prev = curr;
   }
 }
