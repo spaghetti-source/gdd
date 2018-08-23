@@ -43,6 +43,22 @@ struct GroupDecisionDiagram {
     return getNodeCache[i][alpha][key];
   }
 
+  int member(Permutation h, int u) {
+    if (h.identity() && u == top) return true;
+    if (u == bot) return false;
+    int alpha = h(beta[node[u].i]);
+    if (alpha == beta[node[u].i]) {
+      return member(h, node[u].lo); 
+    } else {
+      while (1) {
+        if (node[u].alpha == alpha) 
+          return member(tr[node[u].i][alpha].inv() * h, node[u].hi);
+        if (node[u].i != node[node[u].lo].i) return false;
+        u = node[u].lo;
+      }
+    }
+  }
+
   int singleton(Permutation g, int i = 0) {
     int alpha;
     for (; i < r; ++i) {
@@ -308,6 +324,7 @@ struct GroupDecisionDiagram {
       for (Permutation g: gen) 
         insert(tr[g(q)].inv() * g * h);
     }
+
     std::vector<Permutation> subgen;
     for (int u = 0; u < n; ++u) {
       for (Edge e: adj[u]) {
