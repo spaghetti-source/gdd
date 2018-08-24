@@ -23,7 +23,8 @@ struct GroupDecisionDiagram {
 
   // g = tr[i][alpha] is a representative of G_{i-1}/G_i such that g(beta[i]) = alpha
   int n, r;
-  Permutation tr[rmax][nmax], trinv[rmax][nmax];
+  //Permutation tr[rmax][nmax], trinv[rmax][nmax];
+  std::vector<std::vector<Permutation>> tr, trinv;
   int beta[rmax];
 
   struct Node { int i, alpha, lo, hi; };
@@ -178,7 +179,11 @@ struct GroupDecisionDiagram {
     return out;
   }
 
-  GroupDecisionDiagram(std::vector<Permutation> gen) {
+  GroupDecisionDiagram(std::vector<Permutation> gen) : 
+    tr(rmax, std::vector<Permutation>(nmax)), 
+    trinv(rmax, std::vector<Permutation>(nmax))
+  {
+  //Permutation tr[rmax][nmax], trinv[rmax][nmax];
     n = gen[0].size(); r = 0;
     node.assign(2, Node({rmax,nmax}));
     SchreierSims(gen);

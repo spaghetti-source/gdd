@@ -7,7 +7,7 @@
 #include <iostream>
 
 struct Permutation {
-  static const int nmax = 50;
+  static const int nmax = 100;
 
   int n, p[nmax];
   Permutation(int n = 0) : n(n) { // {, p(n) {
