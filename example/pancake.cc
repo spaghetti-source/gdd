@@ -33,10 +33,12 @@ int main(int argc, char *argv[]) {
   cout << "i: time | #GDDSize | #TotalGDDSize | Cardinality" << endl;
   auto prev = order; prev = 1;
   int w = gdd.top;
+  time_t begin = clock();
   for (int iter = 1; ; ++iter) {
-    tick();
     w = gdd.cartesianProduct(z, w);
-    cout << iter << ": " << tick() << " | ";
+    time_t end = clock();
+    double diff = 1.0 * (begin - end) / CLOCKS_PER_SEC;
+    cout << iter << ": " << diff << " | ";
     auto count = gdd.cardinality(w);
     cout << gdd.numberOfNodes(w) << " | " << gdd.node.size() << " | " << count << " || " << count - prev << endl;
     if (count == order) break;
