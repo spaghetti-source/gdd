@@ -23,7 +23,6 @@ struct GroupDecisionDiagram {
 
   // g = tr[i][alpha] is a representative of G_{i-1}/G_i such that g(beta[i]) = alpha
   int n, r;
-  //Permutation tr[rmax][nmax], trinv[rmax][nmax];
   std::vector<std::vector<Permutation>> tr, trinv;
   int beta[rmax];
 
@@ -120,10 +119,6 @@ struct GroupDecisionDiagram {
       return lMCache[uv] = v;
     }
   }
-  // 
-  // X = g Y
-  //
-  // Y の元は [1, ..., i] を fix する．g は i を動かす．
   HashTable cartesianProductCache;
   int cartesianProduct(int u, int v) {
     if (u == bot || v == bot) return bot;
@@ -181,9 +176,7 @@ struct GroupDecisionDiagram {
 
   GroupDecisionDiagram(std::vector<Permutation> gen) : 
     tr(rmax, std::vector<Permutation>(nmax)), 
-    trinv(rmax, std::vector<Permutation>(nmax))
-  {
-  //Permutation tr[rmax][nmax], trinv[rmax][nmax];
+    trinv(rmax, std::vector<Permutation>(nmax)) {
     n = gen[0].size(); r = 0;
     node.assign(2, Node({rmax,nmax}));
     SchreierSims(gen);
@@ -246,7 +239,8 @@ struct GroupDecisionDiagram {
   // Compute orbit(alpha) and generators of stabilizer(alpha)
   std::pair<std::unordered_map<int, Permutation>, std::vector<Permutation>> reduce(std::vector<Permutation> gen, int alpha) {
 
-    // construct a Schreier tree
+    // Construct a Schreier tree. These forms the transversal.
+    // According to the processing order, prior generators (in the list) is preferred.
     std::unordered_map<int, Permutation> tr;
     std::queue<int> que;
     que.push(alpha);
@@ -264,7 +258,9 @@ struct GroupDecisionDiagram {
       }
     }
 
-    // construct a Jerrum tree
+    // Perform Jerrum filter to reduce the size of next generators.
+ 
+    // Maintain the Jerrum tree as a dynamic graph
     struct Edge { 
       int src, dst;
       Permutation pi;
@@ -284,14 +280,17 @@ struct GroupDecisionDiagram {
       adj[e->src].erase(e);
       adj[r->src].erase(r);
     };
+    // Insert new edge to the Jerrum tree
     std::function<void(Permutation)> insert = [&](Permutation g) {
       while (!g.identity()) {
+        // Find a vertex (in J) that is moved by g
         int s, t;
         for (s = 0; (t = g(s)) == s; ++s);
 
+        // We insert new edge (s, t).
+        // Find a replacement edge (= the smallest edge in the cycle)
         int min_u = n, min_v;
         std::vector<std::list<Edge>::iterator> next(n); 
-        // can assume the graph is tree
         std::function<bool(int,int)> findPath = [&](int u, int p) {
           if (u == t) return true;
           for (auto e = adj[u].begin(); e != adj[u].end(); ++e) {
@@ -309,20 +308,22 @@ struct GroupDecisionDiagram {
           return false;
         };
         bool found = findPath(s, -1);
-        addEdge(s, g); 
-        if (!found) break;
-
-        auto prod = [&](int u, int v) {
-          Permutation pi(n);
-          for (; u != v; u = next[u]->dst) 
-            pi = next[u]->pi * pi;
-          return pi;
-        };
-        g = prod(s, min_u) * g.inv() * prod(min_u, t);
-        eraseEdge(next[min_u]);
+        if (!found) {
+          addEdge(s, g); 
+        } else {
+          addEdge(s, g); 
+          auto prod = [&](int u, int v) {
+            Permutation pi(n);
+            for (; u != v; u = next[u]->dst) 
+              pi = next[u]->pi * pi;
+            return pi;
+          };
+          g = prod(s, min_u) * g.inv() * prod(min_u, t);
+          eraseEdge(next[min_u]);
+        }
       }
     };
-    // from far to near: keep generators close to the original ones
+    // from far to near: this makes generators close to the originals
     for (int i = order.size()-1; i >= 0; --i) {
       int q = order[i];
       Permutation &h = tr[q];
@@ -330,7 +331,13 @@ struct GroupDecisionDiagram {
         insert(tr[g(q)].inv() * g * h);
     }
 
+    // generators for next step
     std::vector<Permutation> subgen;
+    // keep original generators
+    for (Permutation g: gen) {
+      if (g(alpha) == alpha) subgen.push_back(g);
+    }
+    // then, add new (jerrum filtered) generators
     for (int u = 0; u < n; ++u) {
       for (Edge e: adj[u]) {
         if (e.src < e.dst) subgen.push_back(e.pi);
