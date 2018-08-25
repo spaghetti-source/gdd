@@ -1,10 +1,14 @@
-# CFLAGS = -fsanitize=undefined -std=c++11 -O3 -Iinclude/
-CFLAGS = -std=c++11 -O3 -Iinclude/
+CFLAGS = -fsanitize=undefined -std=c++11 -O3 -Iinclude/
+#CFLAGS = -std=c++11 -O3 -Iinclude/
 
-all: pocketcube lightsout pancake permnet rubikscube zerowalk
+
+all: pocketcube lightsout pancake permnet rubikscube zerowalk toffoli
 
 clean:
 	rm pocketcube lightsout pancake permnet rubikscube zerowalk
+
+toffoli: example/toffoli.cc include/gdd.hh include/permutation.hh
+	g++  $(CFLAGS) $< -o $@
 
 pocketcube: example/pocketcube.cc
 	g++  $(CFLAGS) $< -o $@
