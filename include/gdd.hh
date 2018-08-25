@@ -43,6 +43,12 @@ struct GroupDecisionDiagram {
     return getNodeCache[i][alpha][key];
   }
 
+  int sample(int u) {
+    if (u == top || u == bot) return u;
+    if (node[u].lo != bot) return sample(node[u].lo);
+    return getNode(node[u].i, node[u].alpha, bot, sample(node[u].hi));
+  }
+
   int member(Permutation h, int u) {
     if (h.identity() && u == top) return true;
     if (u == bot) return false;
@@ -69,6 +75,18 @@ struct GroupDecisionDiagram {
     if (tr[i][alpha].empty())   return bot; // g is not in G
     return getNode(i, alpha, bot, singleton(trinv[i][alpha]*g, i+1));
   }
+  int fullGroup(int i = 0) {
+    if (i == r) return top;
+    int c = fullGroup(i+1);
+    int z = c;
+    for (int alpha = n-1; alpha >= 0; --alpha) {
+      if (alpha == beta[i]) continue;
+      if (!tr[i][alpha].empty()) {
+        z = getNode(i, alpha, z, c);
+      }
+    }
+    return z;
+  }
 
   HashTable cupCache;
   int cup(int u, int v) {
@@ -86,6 +104,24 @@ struct GroupDecisionDiagram {
       }
     }
     return cupCache[uv];
+  }
+
+  HashTable diffCache;
+  int diff(int u, int v) { // u - v
+    if (u == bot) return bot;
+    if (v == bot) return u;
+    if (u == v) return bot;
+    auto uv = std::make_pair(u, v);
+    if (!diffCache.count(uv)) {
+      if (node[u].i == node[v].i && node[u].alpha == node[v].alpha) {
+        diffCache[uv] = getNode(node[u].i, node[u].alpha, diff(node[u].lo, node[v].lo), diff(node[u].hi, node[v].hi));
+      } else if (node[u].i < node[v].i || (node[u].i == node[v].i && node[u].alpha < node[v].alpha)) {
+        diffCache[uv] = getNode(node[u].i, node[u].alpha, diff(node[u].lo, v), node[u].hi);
+      } else {
+        diffCache[uv] = getNode(node[u].i, node[u].alpha, node[u].lo, diff(node[u].hi, v));
+      }
+    }
+    return diffCache[uv];
   }
 
   HashTable lMCache;

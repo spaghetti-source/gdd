@@ -2,10 +2,17 @@
 CFLAGS = -std=c++11 -O3 -Iinclude/
 
 
-all: pocketcube lightsout pancake permnet rubikscube zerowalk toffoli
+all: pocketcube lightsout pancake permnet rubikscube zerowalk toffoli conjugacy
+test: diff
+
+diff: test/diff.cc
+	g++  $(CFLAGS) $< -o $@
 
 clean:
 	rm pocketcube lightsout pancake permnet rubikscube zerowalk
+
+conjugacy: example/conjugacy.cc
+	g++  $(CFLAGS) $< -o $@
 
 toffoli: example/toffoli.cc include/gdd.hh include/permutation.hh
 	g++  $(CFLAGS) $< -o $@
