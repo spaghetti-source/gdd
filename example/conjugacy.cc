@@ -12,12 +12,13 @@ using namespace std;
 int main(int argc, char *argv[]) {
   int n = atoi(argv[1]);
   vector<Permutation> gen;
+
   gen.push_back(Permutation::parse(n, "(0,1)"));
   Permutation pi(n);
   for (int i = 0; i < n; ++i) pi.p[i] = (i+1) % n;
   gen.push_back(pi);
-
   GroupDecisionDiagram gdd(gen);
+
   vector<int> gs, is;
   for (Permutation g: gen) {
     gs.push_back(gdd.singleton(g));
@@ -35,7 +36,6 @@ int main(int argc, char *argv[]) {
       if (x == prev) break;
     }
     cout << gdd.cardinality(x) << endl;
-    //cout << gdd.enumerate(x) << endl;
     z = gdd.diff(z, x);
   }
 
