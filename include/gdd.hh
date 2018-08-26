@@ -215,7 +215,8 @@ struct GroupDecisionDiagram {
     trinv(rmax, std::vector<Permutation>(nmax)) {
     n = gen[0].size(); r = 0;
     node.assign(2, Node({rmax,nmax}));
-    SchreierSims(gen);
+    //SchreierSims(gen);
+    IncrementalSchreierSims(0, gen);
   }
 
   BigInt groupOrder() {
@@ -381,6 +382,61 @@ struct GroupDecisionDiagram {
     }
     return std::make_pair(tr, subgen);
   }
+
+  // Incremental Schreier-Sims procedure
+  void SchreierTree(int i, std::vector<Permutation> gen) {
+    std::queue<int> que;
+    que.push(beta[i]);
+    tr[i][beta[i]] = trinv[i][beta[i]] = Permutation(n);
+    while (!que.empty()) {
+      int a = que.front(); que.pop();
+      for (Permutation g: gen) {
+        int b = g(a);
+        if (tr[i][b].empty()) {
+          tr[i][b] = g * tr[i][a];
+          trinv[i][b] = tr[i][b].inv();
+          que.push(b);
+        }
+      }
+    }
+  }
+  bool shifting(int i, Permutation h) {
+    if (h.identity()) return true;
+    if (i >= r) return false;
+    if (trinv[i][h(beta[i])].empty()) return false;
+    return shifting(i+1, trinv[i][h(beta[i])] * h);
+  }
+  void IncrementalSchreierSims(int i, std::vector<Permutation> gen) {
+    tr[i] = trinv[i] = std::vector<Permutation>(n);
+
+    int length; 
+    std::tie(beta[i], length) = longestOrbit(gen);
+    if (length == 1) return;
+    if (r <= i) r = i+1;
+
+    std::vector<Permutation> child;
+    for (Permutation g: gen) 
+      if (g(beta[i]) == beta[i]) child.push_back(g);
+
+    while (1) {
+      IncrementalSchreierSims(i+1, child);
+      SchreierTree(i, gen);
+
+      Permutation s;
+      for (int alpha = 0; alpha < n; ++alpha) {
+        for (Permutation g: gen) {
+          Permutation h = tr[i][g(alpha)].inv() * g * tr[i][alpha];
+          if (!shifting(i+1, h)) {
+            s = h;
+            goto ESC;
+          }
+        }
+      }
+ESC:  if (s.empty()) break;
+      child.push_back(s);
+    }
+  }
+
   bool isGroupMember(Permutation g) {
     for (int i = 0; i < r; ++i) {
       int alpha = g(beta[i]);
