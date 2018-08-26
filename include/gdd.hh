@@ -1,5 +1,7 @@
 #pragma once
 
+//#define OLD
+
 #include <vector>
 #include <queue>
 #include <list>
@@ -384,7 +386,22 @@ struct GroupDecisionDiagram {
   }
 
   // Incremental Schreier-Sims procedure
+  //
+  // Construct a Schreier tree. Earlier generators are preferred.
+  std::map<Permutation, int> weight;
+  Permutation mul(Permutation g, Permutation h) {
+    Permutation gh = g * h;
+    if (!weight.count(gh)) {
+      weight[gh] = 10*n;
+      weight[gh.inv()] = 10*n;
+    }
+    weight[gh] = std::min(weight[gh], weight[g] + weight[h]);
+    weight[gh.inv()] = std::min(weight[gh.inv()], weight[gh] + 1);
+    return gh;
+  }
+#ifdef OLD
   void SchreierTree(int i, std::vector<Permutation> gen) {
+    using Node = std::pair<int, int>;
     std::queue<int> que;
     que.push(beta[i]);
     tr[i][beta[i]] = trinv[i][beta[i]] = Permutation(n);
@@ -393,20 +410,44 @@ struct GroupDecisionDiagram {
       for (Permutation g: gen) {
         int b = g(a);
         if (tr[i][b].empty()) {
-          tr[i][b] = g * tr[i][a];
+          tr[i][b] = mul(g, tr[i][a]);
           trinv[i][b] = tr[i][b].inv();
           que.push(b);
         }
       }
     }
   }
+#else
+  void SchreierTree(int i, std::vector<Permutation> gen) {
+    using Node = std::pair<int, int>;
+    std::priority_queue<Node, std::vector<Node>, std::greater<Node>> que;
+    que.push(Node(0, beta[i]));
+    tr[i][beta[i]] = trinv[i][beta[i]] = Permutation(n);
+    while (!que.empty()) {
+      int w, a; std::tie(w, a) = que.top(); que.pop();
+      for (Permutation g: gen) {
+        int b = g(a);
+        if (tr[i][b].empty()) {
+          tr[i][b] = mul(g, tr[i][a]);
+          trinv[i][b] = tr[i][b].inv();
+          que.push(Node(weight[tr[i][b]], b));
+        }
+      }
+    }
+  }
+#endif
+  // Subgroup membership test
   bool shifting(int i, Permutation h) {
     if (h.identity()) return true;
     if (i >= r) return false;
     if (trinv[i][h(beta[i])].empty()) return false;
     return shifting(i+1, trinv[i][h(beta[i])] * h);
   }
+  // Main routine for incremental Schreier-Sims
   void IncrementalSchreierSims(int i, std::vector<Permutation> gen) {
+    for (Permutation g: gen) weight[g] = 1;
+    weight[Permutation(n)] = 0;
+
     tr[i] = trinv[i] = std::vector<Permutation>(n);
 
     int length; 
@@ -425,14 +466,13 @@ struct GroupDecisionDiagram {
       Permutation s;
       for (int alpha = 0; alpha < n; ++alpha) {
         for (Permutation g: gen) {
-          Permutation h = tr[i][g(alpha)].inv() * g * tr[i][alpha];
+          Permutation h = mul(mul(tr[i][g(alpha)].inv(), g), tr[i][alpha]);
           if (!shifting(i+1, h)) {
-            s = h;
-            goto ESC;
+            if (s.empty() || weight[s] > weight[h]) s = h;
           }
         }
       }
-ESC:  if (s.empty()) break;
+      if (s.empty()) break;
       child.push_back(s);
     }
   }
