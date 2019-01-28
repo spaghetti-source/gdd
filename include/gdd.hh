@@ -1,7 +1,5 @@
 #pragma once
 
-//#define OLD
-
 #include <vector>
 #include <queue>
 #include <list>
@@ -399,25 +397,6 @@ struct GroupDecisionDiagram {
     weight[gh.inv()] = std::min(weight[gh.inv()], weight[gh] + 1);
     return gh;
   }
-#ifdef OLD
-  void SchreierTree(int i, std::vector<Permutation> gen) {
-    using Node = std::pair<int, int>;
-    std::queue<int> que;
-    que.push(beta[i]);
-    tr[i][beta[i]] = trinv[i][beta[i]] = Permutation(n);
-    while (!que.empty()) {
-      int a = que.front(); que.pop();
-      for (Permutation g: gen) {
-        int b = g(a);
-        if (tr[i][b].empty()) {
-          tr[i][b] = mul(g, tr[i][a]);
-          trinv[i][b] = tr[i][b].inv();
-          que.push(b);
-        }
-      }
-    }
-  }
-#else
   void SchreierTree(int i, std::vector<Permutation> gen) {
     using Node = std::pair<int, int>;
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> que;
@@ -435,7 +414,6 @@ struct GroupDecisionDiagram {
       }
     }
   }
-#endif
   // Subgroup membership test
   bool shifting(int i, Permutation h) {
     if (h.identity()) return true;
