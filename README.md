@@ -40,11 +40,8 @@ int main() {
   auto prev = order; prev = 1;
   int w = gdd.top;
 
-  time_t begin = clock();
   for (int iter = 1; iter < 15; ++iter) {
     w = gdd.cartesianProduct(z, w);
-    time_t end = clock();
-    double diff = 1.0 * (begin - end) / CLOCKS_PER_SEC;
     cout << iter << ": " << diff << " | ";
     auto count = gdd.cardinality(w);
     cout << gdd.numberOfNodes(w) << " | " << gdd.node.size() << " | " << count << " || " << count - prev << endl;
@@ -53,6 +50,11 @@ int main() {
   }
   return 0;
 }
+````
+
+````
+> g++ main.cc
+> ./a.out
 ````
 
 ## Performance
