@@ -32,7 +32,11 @@ int main() {
 
   int z = gdd.top;
   for (Permutation g: gen) {
-    z = gdd.cup(z, gdd.singleton(g));
+    z = gdd.cup(z, gdd.sing
+    
+    
+ \
+ ton(g));
     z = gdd.cup(z, gdd.singleton(g.inv()));
   }
 
@@ -68,9 +72,9 @@ int main() {
 | GDD (size) |  6,537 |  58,850 |   476,497 |  3,641,049 |    26,721,270 |
 | GDD (time) |  0.02s |   0.30s |     3.54s |     35.04s |        338.2s |
 | piDD (size) | 26,166 | 247,770 | 2,319,674 | 21,062,444 |             — |
-| piDD (time) |  0.11s |   1.80s |     23.4s |     247.3s | \(\le\) 7200s |
+| piDD (time) |  0.11s |   1.80s |     23.4s |     247.3s | \(\ge\) 7200s |
 | rhoDD (size)  | 36,799 | 331,549 | 2,978,733 | 26,715,003 |             — |
-| rhoDD (time) |  0.51s |   6.36s |     58.5s |     572.9s | \(\le\) 7200s |
+| rhoDD (time) |  0.51s |   6.36s |     58.5s |     572.9s | \(\ge\) 7200s |
 
 piDD, rhoDD are existing data structure for the same purpose.
 
