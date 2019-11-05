@@ -32,11 +32,7 @@ int main() {
 
   int z = gdd.top;
   for (Permutation g: gen) {
-    z = gdd.cup(z, gdd.sing
-    
-    
- \
- ton(g));
+    z = gdd.cup(z, gdd.singleton(g));
     z = gdd.cup(z, gdd.singleton(g.inv()));
   }
 
